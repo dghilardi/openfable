@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
 	import { db } from '$lib/db';
+	import type { Character } from '$lib/schemas';
 	import { Input } from '$lib/components/ui/input';
+	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Image } from '@unpic/svelte';
 	import { Search } from 'lucide-svelte';
@@ -13,11 +15,17 @@
 		queryFn: db.getAllCharacters
 	}));
 
-	// Derived state for filtering
+	// Derived state for filtering and sorting
 	const filteredCharacters = $derived(
-		characters.data?.filter((c) =>
-			c.name.toLowerCase().includes(searchQuery.toLowerCase())
-		) ?? []
+		(characters.data || [])
+			.filter((c) =>
+				c.name.toLowerCase().includes(searchQuery.toLowerCase())
+			)
+			.sort((a, b) => {
+				const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+				const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+				return dateB - dateA;
+			})
 	);
 </script>
 

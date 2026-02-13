@@ -9,12 +9,15 @@ export default defineConfig({
 		sveltekit(),
 		VitePWA({
 			registerType: 'autoUpdate',
-			includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+			injectRegister: 'auto',
+			includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
 			manifest: {
 				name: 'OpenFable',
 				short_name: 'OpenFable',
-				description: 'Manager for custom audio characters',
-				theme_color: '#ffffff',
+				description: 'Decentralized manager for custom audio characters',
+				theme_color: '#3b82f6',
+				background_color: '#ffffff',
+				display: 'standalone',
 				icons: [
 					{
 						src: 'pwa-192x192.png',
@@ -25,6 +28,22 @@ export default defineConfig({
 						src: 'pwa-512x512.png',
 						sizes: '512x512',
 						type: 'image/png'
+					}
+				]
+			},
+			workbox: {
+				globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+				runtimeCaching: [
+					{
+						urlPattern: /^https:\/\/raw\.githubusercontent\.com\/.*/i,
+						handler: 'StaleWhileRevalidate',
+						options: {
+							cacheName: 'registry-data',
+							expiration: {
+								maxEntries: 10,
+								maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+							}
+						}
 					}
 				]
 			}

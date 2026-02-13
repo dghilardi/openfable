@@ -7,6 +7,8 @@
 	import { ArrowLeft, Play, Download, Nfc, ExternalLink } from 'lucide-svelte';
 	import { useNFC } from '$lib/hooks/useNFC.svelte';
     import * as Card from '$lib/components/ui/card';
+    import Modal from '$lib/components/Modal.svelte';
+    import { toast } from 'svelte-sonner';
     
 	const id = $derived($page.params.id);
 
@@ -16,6 +18,16 @@
 	}));
 
     const nfc = useNFC();
+    let showNFCModal = $state(false);
+
+    async function copyPayload(text: string) {
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.success('Payload copied to clipboard');
+        } catch (err) {
+            toast.error('Failed to copy payload');
+        }
+    }
 </script>
 
 <div class="container mx-auto p-4 max-w-4xl">
@@ -43,14 +55,26 @@
         {@const char = character.data}
 		<div class="space-y-8">
             <div class="grid gap-6 md:grid-cols-2">
-                <Card.Root class="overflow-hidden bg-muted">
-                    <Image 
-                        src={char.gallery_images[0] || char.preview_image} 
-                        alt={char.name}
-                        layout="fullWidth"
-                        class="aspect-square object-cover"
-                    />
-                </Card.Root>
+                <div class="space-y-4">
+                    <Card.Root class="overflow-hidden bg-muted">
+                        <Image 
+                            src={char.gallery_images[0] || char.preview_image} 
+                            alt={char.name}
+                            layout="fullWidth"
+                            class="aspect-square object-cover"
+                        />
+                    </Card.Root>
+                    
+                    {#if char.gallery_images && char.gallery_images.length > 1}
+                        <div class="grid grid-cols-4 gap-2">
+                            {#each char.gallery_images as img}
+                                <div class="aspect-square bg-muted rounded-md overflow-hidden border">
+                                    <Image src={img} alt="" layout="fullWidth" class="object-cover h-full" />
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
 
                 <div class="space-y-6">
                     <div>
@@ -83,14 +107,16 @@
                             <Nfc class="mr-2 h-4 w-4" /> Write to Tag
                         </h3>
                         
-                        {#if nfc.status === 'unsupported'}
-                            <div class="p-4 bg-amber-50 text-amber-900 rounded-lg text-sm">
-                                <p class="font-bold">WebNFC not supported</p>
-                                <p class="mt-1">To write tags on iOS or other browsers, use an app like NFC Tools with the following payload:</p>
-                                <code class="block mt-2 p-2 bg-amber-100 rounded break-all">{char.nfc_payload}</code>
-                            </div>
-                        {:else}
-                            <div class="space-y-2">
+                        <div class="space-y-2">
+                            {#if nfc.status === 'unsupported'}
+                                <Button 
+                                    variant="secondary" 
+                                    class="w-full h-12 text-lg" 
+                                    onclick={() => showNFCModal = true}
+                                >
+                                    How to Write Tag
+                                </Button>
+                            {:else}
                                 <Button 
                                     class="w-full h-12 text-lg" 
                                     disabled={nfc.status === 'scanning' || nfc.status === 'writing'}
@@ -110,11 +136,35 @@
                                 {#if nfc.status === 'success'}
                                     <p class="text-xs text-green-600 font-medium text-center">Successfully written!</p>
                                 {/if}
-                            </div>
-                        {/if}
+                            {/if}
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <Modal bind:open={showNFCModal} title="How to Write NFC Tag">
+                <div class="space-y-4 py-2">
+                    <p class="text-sm text-muted-foreground">
+                        Your browser doesn't support direct NFC writing. You can still write this character using the <strong>NFC Tools</strong> app:
+                    </p>
+                    <ol class="text-sm space-y-2 list-decimal list-inside">
+                        <li>Copy the payload below.</li>
+                        <li>Open the <strong>NFC Tools</strong> app on your phone.</li>
+                        <li>Select <strong>Write</strong> &gt; <strong>Add a record</strong>.</li>
+                        <li>Select <strong>Text</strong> and paste the payload.</li>
+                        <li>Tap <strong>Write</strong> and hold your phone near the tag.</li>
+                    </ol>
+                    <div class="mt-4">
+                        <p class="text-xs font-semibold mb-1">Payload:</p>
+                        <div class="flex items-center gap-2 p-2 bg-muted rounded border">
+                            <code class="flex-1 text-xs break-all">{char.nfc_payload}</code>
+                            <Button size="sm" variant="ghost" onclick={() => copyPayload(char.nfc_payload || '')}>
+                                Copy
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
 
             {#if char.models_3d && char.models_3d.length > 0}
                 <div class="space-y-4">

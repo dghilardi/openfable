@@ -17,12 +17,18 @@ let dbPromise: Promise<any>;
 
 if (typeof window !== 'undefined') {
 	dbPromise = openDB<OpenFableDB>(DB_NAME, DB_VERSION, {
-		upgrade(db) {
+		upgrade(db, oldVersion, newVersion, transaction) {
 			if (!db.objectStoreNames.contains(DB_STORES.REGISTRIES)) {
 				db.createObjectStore(DB_STORES.REGISTRIES, { keyPath: 'url' });
 			}
 			if (!db.objectStoreNames.contains(DB_STORES.CHARACTERS)) {
-				db.createObjectStore(DB_STORES.CHARACTERS, { keyPath: 'id' });
+				const charStore = db.createObjectStore(DB_STORES.CHARACTERS, { keyPath: 'id' });
+				charStore.createIndex('registry_url', 'registry_url');
+			} else if (oldVersion < 2) {
+				const charStore = transaction.objectStore(DB_STORES.CHARACTERS);
+				if (!charStore.indexNames.contains('registry_url')) {
+					charStore.createIndex('registry_url', 'registry_url');
+				}
 			}
 		}
 	});
@@ -58,16 +64,16 @@ export const db = {
 		const db = await dbPromise;
 		const tx = db.transaction([DB_STORES.REGISTRIES, DB_STORES.CHARACTERS], 'readwrite');
 		
-		// Get all characters from this registry to delete them?
-		// IndexedDB doesn't support "delete where" easily without index.
-		// For now simple removal of registry.
-		// Use cursor or getAll to find chars.
-		// Ideally we need an index on registry_url for characters.
+		const charStore = tx.objectStore(DB_STORES.CHARACTERS);
+		const index = charStore.index('registry_url');
+		let cursor = await index.openKeyCursor(IDBKeyRange.only(url));
+
+		while (cursor) {
+			await charStore.delete(cursor.primaryKey);
+			cursor = await cursor.continue();
+		}
 		
 		await tx.objectStore(DB_STORES.REGISTRIES).delete(url);
-		
-		// TODO: Clean up characters. This requires an index.
-		// For MVP, we might leave orphans or handle it later.
 		
 		await tx.done;
 	},

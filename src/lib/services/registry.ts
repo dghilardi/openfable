@@ -1,6 +1,6 @@
-import { RegistrySchema, type Registry } from '../schemas';
+import { RegistrySchema, CharacterSchema, type Registry } from '../schemas';
 import { db } from '../db';
-import { z, ZodError, type ZodIssue } from 'zod';
+import { z } from 'zod';
 
 export const registryService = {
 	async fetchRegistry(url: string): Promise<Registry> {
@@ -11,8 +11,42 @@ export const registryService = {
 			}
 			const json = await res.json();
 			
-			// Validate with Zod
-			const registry = RegistrySchema.parse(json);
+			// Validate top-level metadata first
+			const metaResult = RegistrySchema.pick({ meta: true }).safeParse(json);
+			if (!metaResult.success) {
+				throw new Error(`Invalid registry metadata: ${metaResult.error.errors[0].message}`);
+			}
+
+			// Validate characters one by one to support partial failure
+			const rawCharacters = json.characters;
+			if (!Array.isArray(rawCharacters)) {
+				throw new Error('Invalid registry format: "characters" must be an array');
+			}
+
+			const validCharacters: any[] = [];
+			const errors: string[] = [];
+
+			for (const char of rawCharacters) {
+				const charResult = CharacterSchema.safeParse(char);
+				if (charResult.success) {
+					validCharacters.push(charResult.data);
+				} else {
+					errors.push(`Character "${char.name || 'unknown'}" skipped: ${charResult.error.errors[0].message}`);
+				}
+			}
+
+			if (validCharacters.length === 0) {
+				throw new Error('The registry contains no valid characters.');
+			}
+
+			if (errors.length > 0) {
+				console.warn('Some characters were skipped during registry fetch:', errors);
+			}
+
+			const registry: Registry = {
+				meta: metaResult.data.meta,
+				characters: validCharacters
+			};
 			
 			// Save to DB
 			await db.addRegistry(url, registry);
@@ -20,20 +54,25 @@ export const registryService = {
 			return registry;
 		} catch (err: unknown) {
 			console.error('Registry fetch error:', err);
-			// Try to load from DB if offline/failed
-			// For now, rethrow or handle specific errors
-			if (err instanceof ZodError) {
-				// @ts-ignore - ZodError<unknown> issue
-				throw new Error(`Invalid registry format: ${err.errors.map((e: ZodIssue) => e.message).join(', ')}`);
-			}
-			throw err;
+			if (err instanceof Error) throw err;
+			throw new Error('An unknown error occurred during registry fetch');
 		}
 	},
 	
 	async getRegistryFromDB(url: string): Promise<Registry | undefined> {
-		// Implement getting specific registry logic via db.getRegistries().find
 		const registries = await db.getRegistries();
 		const reg = registries.find(r => r.url === url);
 		return reg;
+	},
+
+	async updateAllRegistries(): Promise<void> {
+		const registries = await db.getRegistries();
+		for (const reg of registries) {
+			try {
+				await this.fetchRegistry(reg.url);
+			} catch (err) {
+				console.error(`Failed to background update ${reg.url}:`, err);
+			}
+		}
 	}
 };

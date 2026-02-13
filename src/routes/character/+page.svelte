@@ -62,19 +62,28 @@
 		}
 	});
 
-    function handleViewOnce() {
-         // To view once, we might strictly need to add it to DB or having a separate store.
-         // Given complexity, and requirement "App checks if ... already known", 
-         // "View Once" implies using the data without persistence. 
-         // But our architecture relies on DB for `db.getCharacter(id)`.
-         // So for "View Once", maybe we add it and remove it later? Or pass data via state?
-         // Simplest MVP: Just support "Add". "View Once" is nice to have but adding is safer.
-         // Or hack: Add it but mark as temporary?
-         // Let's just implement "Add" for now as per "Input Methods" requirement focus.
-         // Actually I'll just redirect to home if canceled.
-         
-         // User scenario: "This character belongs to a new collection..."
-         // I'll stick to "Add key" flow.
+    async function handleViewOnce() {
+        if (!id || !fetchedRegistry) return;
+        
+        // Find the specific character in the fetched registry
+        const char = fetchedRegistry.characters.find((c: any) => c.id === id);
+        
+        if (char) {
+            // we temporarily add it to DB but WITHOUT adding the registry to the registries store?
+            // Actually, the detail page uses `db.getCharacter(id)`. 
+            // Better: Add the character to the characters store with a special flag/temporary property,
+            // OR just add it normally and it will be orphans if registry is not added.
+            // As per implementation plan, we add it normally but it won't show in any 'collection' list.
+            
+            for (const c of fetchedRegistry.characters) {
+                await db.addCharacter({ ...c, registry_url: registryUrl });
+            }
+            
+            toast.info('Viewing collection once (not added to library)');
+            goto(`/character/${id}`);
+        } else {
+            error = "Character not found in this collection.";
+        }
     }
 </script>
 
@@ -104,6 +113,9 @@
                          {:else}
                              Add Collection & View Character
                          {/if}
+                     </Button>
+                     <Button variant="secondary" class="w-full" onclick={handleViewOnce}>
+                         View Character Once
                      </Button>
                      <Button variant="outline" class="w-full" href="/">Cancel</Button>
                  </div>
