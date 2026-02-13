@@ -9,7 +9,7 @@
     import * as Card from '$lib/components/ui/card';
     import Modal from '$lib/components/Modal.svelte';
     import { toast } from 'svelte-sonner';
-    
+    let { data } = $props();
 	const id = $derived($page.params.id);
 
 	const character = createQuery(() => ({
@@ -17,7 +17,8 @@
 		queryFn: async () => {
             if (!id) return null;
             return (await db.getCharacter(id)) || null;
-        }
+        },
+        initialData: data.character
 	}));
 
     const nfc = useNFC();
@@ -72,18 +73,7 @@
         {/if}
     </div>
 
-	{#if character.isLoading}
-		<div class="space-y-8 animate-pulse">
-            <div class="grid gap-6 md:grid-cols-2">
-                <div class="aspect-square rounded-xl bg-muted"></div>
-                <div class="space-y-4">
-                    <div class="h-8 w-3/4 rounded bg-muted"></div>
-                    <div class="h-4 w-1/4 rounded bg-muted"></div>
-                    <div class="h-24 w-full rounded bg-muted"></div>
-                </div>
-            </div>
-        </div>
-	{:else if character.isError || !char}
+	{#if character.isError || !char}
 		<div class="text-center py-20">
 			<h2 class="text-2xl font-bold mb-4">Character Not Found</h2>
 			<p class="text-muted-foreground mb-8">The character you are looking for does not exist in your local database.</p>
