@@ -5,7 +5,7 @@
 	import { registryService } from '$lib/services/registry';
 	import { Button } from '$lib/components/ui/button';
 	import { Image } from '@unpic/svelte';
-	import { ArrowLeft, Play, Download, Nfc, ExternalLink, Share2 } from 'lucide-svelte';
+	import { ArrowLeft, Play, Download, Nfc, ExternalLink, Share2, Check } from 'lucide-svelte';
 	import { useNFC } from '$lib/hooks/useNFC.svelte';
     import * as Card from '$lib/components/ui/card';
     import Modal from '$lib/components/Modal.svelte';
@@ -176,66 +176,67 @@
 
                     <div class="space-y-4">
                         {#if char.audio_sample_url}
-                            <div class="flex items-center space-x-4 p-4 rounded-2xl bg-muted/30 border border-border">
-                                <Button size="icon" variant="secondary" class="shrink-0">
-                                    <Play class="size-5" />
+                            <div class="glass-panel flex items-center space-x-4 p-4 rounded-[20px] shadow-sm">
+                                <Button size="icon" variant="secondary" class="shrink-0 rounded-full shadow-sm">
+                                    <Play class="size-5 ml-1" />
                                 </Button>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-semibold mb-2">Preview Audio</p>
-                                    <audio src={char.audio_sample_url} controls class="w-full h-8"></audio>
+                                    <audio src={char.audio_sample_url} controls class="w-full h-8 accent-brand-indigo"></audio>
                                 </div>
                             </div>
                         {/if}
                         
                         {#if char.audio_zip_url}
-                            <Button variant="outline" class="w-full text-brand-indigo" href={char.audio_zip_url} target="_blank">
+                            <Button variant="outline" class="w-full text-brand-indigo rounded-[20px] h-12" href={char.audio_zip_url} target="_blank">
                                 <Download class="mr-2 size-5" /> Download Audio Assets (.zip)
                             </Button>
                         {/if}
                     </div>
 
                     <div class="pt-6 border-t">
-                        <h3 class="font-bold text-lg flex items-center mb-4">
-                            <Nfc class="mr-2 size-5 text-brand-indigo" /> The Magic Touch
+                        <h3 class="font-bold text-lg flex items-center mb-4 text-brand-indigo">
+                            <Nfc class="mr-2 size-5" /> The Magic Touch
                         </h3>
                         
-                        <div class="space-y-3">
-                            {#if nfc.status === 'unsupported'}
+                        {#if nfc.status === 'unsupported'}
+                            <!-- Static Button for Unsupported State -->
+                            <div class="w-full py-4">
                                 <Button 
                                     variant="secondary" 
-                                    class="w-full h-14 text-lg" 
+                                    class="w-full h-14 text-lg rounded-full shadow-sm border border-border" 
                                     onclick={() => showNFCModal = true}
                                 >
                                     How to Write Tag
                                 </Button>
-                            {:else}
+                            </div>
+                        {:else}
+                            <!-- Mobile Sticky Container / Desktop Static -->
+                            <div class="fixed bottom-24 left-4 right-4 z-40 md:static md:z-auto md:w-full">
                                 <Button 
                                     variant="magic" 
                                     class={cn(
-                                        "w-full h-14 text-xl transition-all duration-500",
-                                        nfc.status === 'success' && "bg-spark-teal shadow-spark-teal/20"
+                                        "w-full h-14 text-xl transition-all duration-500 shadow-xl md:shadow-md magic-hover relative overflow-hidden",
+                                        nfc.status === 'success' && "bg-spark-teal shadow-spark-teal/20 w-14 rounded-full p-0 mx-auto block"
                                     )}
                                     disabled={nfc.status === 'scanning' || nfc.status === 'writing'}
                                     onclick={() => char.nfc_payload && nfc.write(char.nfc_payload)}
                                 >
                                     {#if nfc.status === 'scanning'}
-                                        <div class="flex items-center gap-3">
+                                        <div class="flex items-center justify-center gap-3">
                                             <span class="animate-pulse">Approach Tag...</span>
                                         </div>
                                     {:else if nfc.status === 'writing'}
-                                        <div class="flex items-center gap-3">
+                                        <div class="flex items-center justify-center gap-3">
                                             <Nfc class="animate-spin" />
                                             <span>Writing...</span>
                                         </div>
                                     {:else if nfc.status === 'success'}
-                                        <div class="flex items-center gap-2 animate-in zoom-in slide-in-from-bottom-2">
-                                            <svg class="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" class="animate-draw" />
-                                            </svg>
-                                            <span>Written!</span>
+                                        <div class="flex items-center justify-center size-full animate-in zoom-in">
+                                            <Check class="size-8 text-white animate-draw" />
                                         </div>
                                     {:else}
-                                        <div class="flex items-center gap-2">
+                                        <div class="flex items-center justify-center gap-2">
                                             <Nfc class="size-6" />
                                             <span>Write to Tag</span>
                                         </div>
@@ -243,10 +244,16 @@
                                 </Button>
                                 
                                 {#if nfc.error}
-                                    <p class="text-sm text-destructive font-medium text-center animate-in fade-in slide-in-from-top-1">{nfc.error}</p>
+                                    <div class="absolute -top-16 left-0 right-0 md:static md:mt-2 pointer-events-none">
+                                        <p class="text-sm text-white bg-destructive/90 backdrop-blur px-4 py-2 rounded-full mx-auto w-fit font-medium text-center animate-in fade-in slide-in-from-bottom-2 md:text-destructive md:bg-transparent md:p-0 shadow-lg">
+                                            {nfc.error}
+                                        </p>
+                                    </div>
                                 {/if}
-                            {/if}
-                        </div>
+                            </div>
+                            <!-- Spacer for Mobile Sticky Button -->
+                            <div class="h-24 md:hidden"></div>
+                        {/if}
                     </div>
                 </div>
             </div>

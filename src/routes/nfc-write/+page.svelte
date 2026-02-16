@@ -30,21 +30,21 @@
     </div>
 
     {#if !payload}
-        <Card.Root class="border-destructive/50 bg-destructive/5">
-             <Card.Content class="pt-6 text-center text-destructive">
-                <p>No payload provided to write.</p>
+        <Card.Root class="border-destructive/50 bg-destructive/5 overflow-hidden">
+             <Card.Content class="p-8 text-center text-destructive flex flex-col items-center justify-center min-h-[120px]">
+                <p class="font-medium">No payload provided to write.</p>
             </Card.Content>
         </Card.Root>
     {:else}
         <div class="space-y-6">
-            <Card.Root>
-                <Card.Header>
+            <Card.Root class="overflow-hidden">
+                <Card.Header class="p-6 pb-2">
                     <Card.Title>Data Payload</Card.Title>
                 </Card.Header>
-                <Card.Content>
-                    <div class="flex items-center gap-2 p-3 bg-muted rounded border">
+                <Card.Content class="p-6 pt-0">
+                    <div class="flex items-center gap-2 p-3 bg-muted rounded-lg border">
                         <code class="flex-1 text-sm font-mono break-all">{payload}</code>
-                         <Button size="icon" variant="ghost" onclick={copyPayload}>
+                         <Button size="icon" variant="ghost" onclick={copyPayload} class="shrink-0">
                             <Copy class="size-4" />
                         </Button>
                     </div>
@@ -52,15 +52,15 @@
             </Card.Root>
 
              {#if nfc.status === 'unsupported'}
-                 <Card.Root class="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
-                    <Card.Header>
+                 <Card.Root class="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 overflow-hidden">
+                    <Card.Header class="p-6 pb-2">
                         <Card.Title class="text-orange-800 dark:text-orange-200">Manual Write Required</Card.Title>
                     </Card.Header>
-                    <Card.Content class="space-y-4">
-                        <p class="text-sm text-orange-700 dark:text-orange-300">
+                    <Card.Content class="space-y-4 p-6 pt-0">
+                        <p class="text-base text-orange-700 dark:text-orange-300 leading-relaxed">
                             Your browser or device doesn't support direct NFC writing. Please use an external app like <strong>NFC Tools</strong>.
                         </p>
-                        <ol class="text-sm space-y-2 list-decimal list-inside text-orange-800 dark:text-orange-200">
+                        <ol class="text-sm space-y-2 list-decimal list-inside text-orange-800 dark:text-orange-200 bg-orange-100/50 dark:bg-orange-900/10 p-4 rounded-lg">
                             <li>Copy the payload above.</li>
                             <li>Open your NFC writing app.</li>
                             <li>Select <strong>Write</strong> &gt; <strong>Add a record</strong>.</li>

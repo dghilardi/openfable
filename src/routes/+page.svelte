@@ -70,17 +70,17 @@
 
 <div class="container mx-auto p-6 max-w-7xl">
 	<div class="space-y-8">
-        <div class="flex flex-col gap-4">
-            <h1 class="text-4xl font-extrabold tracking-tight lg:text-5xl">
+        <div class="flex flex-col gap-6 md:gap-8">
+            <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight">
                 My <span class="text-brand-indigo">Characters</span>
             </h1>
-            <div class="flex items-center space-x-3 max-w-md bg-muted/50 rounded-full px-4 py-2 border border-border focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                <Search class="w-5 h-5 text-muted-foreground" />
+            <div class="glass-panel flex items-center space-x-3 max-w-md rounded-full px-5 py-3 transition-all focus-within:ring-2 focus-within:ring-primary/20 shadow-sm">
+                <Search class="size-5 text-muted-foreground" />
                 <input 
                     type="search" 
                     placeholder="Search characters..." 
                     bind:value={searchQuery} 
-                    class="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground"
+                    class="flex-1 bg-transparent border-none outline-none text-base placeholder:text-muted-foreground"
                 />
             </div>
         </div>
@@ -89,7 +89,7 @@
 			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 				{#each Array(8) as _}
 					<div class="space-y-4">
-	                    <div class="aspect-square w-full rounded-2xl bg-muted animate-pulse"></div>
+	                    <div class="aspect-square w-full rounded-[20px] bg-muted animate-pulse"></div>
 	                    <div class="space-y-2">
 	                        <div class="h-4 w-2/3 rounded bg-muted animate-pulse"></div>
 	                    </div>
@@ -107,24 +107,24 @@
 				<Button variant="secondary" class="mt-4" href="/settings">Add a Collection</Button>
 			</div>
 		{:else}
-			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-24">
 				{#each filteredCharacters as character (character.id)}
 					<a 
                         href="/character/{character.id}" 
                         class="group" 
                         style="view-transition-name: char-card-{character.id}"
                     >
-						<Card.Root class="h-full border-none p-0 bg-surface shadow-xs">
-							<div class="aspect-square relative overflow-hidden rounded-2xl">
+						<Card.Root class="h-full border-none p-0 bg-surface shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 rounded-[20px] overflow-hidden">
+							<div class="aspect-square relative overflow-hidden">
 								<Image
 									src={character.preview_image || character.gallery_images[0]}
 									alt={character.name}
 									layout="fullWidth"
-									class="object-cover transition-transform duration-500 group-hover:scale-110"
+									class="object-cover size-full transition-transform duration-700 group-hover:scale-110"
 								/>
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 							</div>
-							<Card.Content class="p-4">
+							<Card.Content class="p-4 relative">
 								<h3 class="font-bold text-lg truncate group-hover:text-brand-indigo transition-colors">{character.name}</h3>
 							</Card.Content>
 						</Card.Root>
