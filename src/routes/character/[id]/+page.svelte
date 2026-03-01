@@ -5,14 +5,16 @@
 	import { registryService } from '$lib/services/registry';
 	import { Button } from '$lib/components/ui/button';
 	import { Image } from '@unpic/svelte';
-	import { ArrowLeft, Play, Download, Nfc, ExternalLink, Share2, Check } from 'lucide-svelte';
+	import { ArrowLeft, Nfc, ExternalLink, Share2, Check, Download } from 'lucide-svelte';
 	import { useNFC } from '$lib/hooks/useNFC.svelte';
     import * as Card from '$lib/components/ui/card';
-    import Modal from '$lib/components/Modal.svelte';
 	import { toast } from 'svelte-sonner';
     import { cn } from '$lib/utils';
     import { createMutation, useQueryClient } from '@tanstack/svelte-query';
     import { goto } from '$app/navigation';
+	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
+	import FableForgeModal from '$lib/components/FableForgeModal.svelte';
+
     let { data } = $props();
 	const id = $derived($page.params.id);
 
@@ -26,21 +28,11 @@
 	}));
 
     const nfc = useNFC();
-    let showNFCModal = $state(false);
-
-    async function copyPayload(text: string) {
-        try {
-            await navigator.clipboard.writeText(text);
-            toast.success('Payload copied to clipboard');
-        } catch (err) {
-            toast.error('Failed to copy payload');
-        }
-    }
+    let showFableForgeModal = $state(false);
 
     async function handleShare(char: any) {
         const url = new URL(window.location.origin + '/character');
         url.searchParams.set('id', char.id);
-        // We need the registry URL. The character object from DB has it.
         url.searchParams.set('registry', char.registry_url);
         
         const shareData = {
@@ -72,8 +64,6 @@
             queryClient.invalidateQueries({ queryKey: ['character', id] });
             queryClient.invalidateQueries({ queryKey: ['registries'] });
             queryClient.invalidateQueries({ queryKey: ['characters'] });
-            
-            // Navigate to same page but without search params
             goto(`/character/${id}`, { replaceState: true });
         },
         onError: (err) => {
@@ -83,16 +73,12 @@
 
     async function handleAddCollection() {
         if (!char?.registry_url) return;
-        
-        // Check if already in DB (maybe added in another window)
         const existing = await registryService.getRegistryFromDB(char.registry_url);
         if (existing) {
             toast.info('Collection was already in your library');
-            // Just clean up the URL
             goto(`/character/${id}`, { replaceState: true });
             return;
         }
-
         addRegistry.mutate(char.registry_url);
     }
 
@@ -174,44 +160,47 @@
                         <p class="text-lg text-muted-foreground mt-4 leading-relaxed">{char.description || 'No description available.'}</p>
                     </div>
 
-                    <div class="space-y-4">
-                        {#if char.audio_sample_url}
-                            <div class="glass-panel flex items-center space-x-4 p-4 rounded-[20px] shadow-sm">
-                                <Button size="icon" variant="secondary" class="shrink-0 rounded-full shadow-sm">
-                                    <Play class="size-5 ml-1" />
-                                </Button>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-semibold mb-2">Preview Audio</p>
-                                    <audio src={char.audio_sample_url} controls class="w-full h-8 accent-brand-indigo"></audio>
-                                </div>
+                    <!-- Audio Tracks Player -->
+                    {#if (char.tracks && char.tracks.length > 0) || char.audio_sample_url}
+                        <div class="space-y-3">
+                            <h3 class="font-bold text-sm uppercase tracking-wider text-muted-foreground">
+                                Tracce Audio
+                            </h3>
+                            <AudioPlayer
+                                tracks={char.tracks ?? []}
+                                fallbackUrl={char.audio_sample_url}
+                                fallbackLabel="Preview"
+                            />
+                        </div>
+                    {/if}
+
+                    <!-- Download zip -->
+                    {#if char.audio_zip_url}
+                        <Button variant="outline" class="w-full text-brand-indigo rounded-[20px] h-12" href={char.audio_zip_url} target="_blank">
+                            <Download class="mr-2 size-5" /> Download Audio Assets (.zip)
+                        </Button>
+                    {/if}
+
+                    <!-- Open in FableForge -->
+                    <div class="pt-2">
+                        <Button
+                            variant="magic"
+                            class="w-full h-14 text-xl transition-all duration-500 shadow-xl md:shadow-md magic-hover relative overflow-hidden"
+                            onclick={() => showFableForgeModal = true}
+                        >
+                            <div class="flex items-center justify-center gap-2">
+                                <ExternalLink class="size-5" />
+                                <span>Apri in FableForge</span>
                             </div>
-                        {/if}
-                        
-                        {#if char.audio_zip_url}
-                            <Button variant="outline" class="w-full text-brand-indigo rounded-[20px] h-12" href={char.audio_zip_url} target="_blank">
-                                <Download class="mr-2 size-5" /> Download Audio Assets (.zip)
-                            </Button>
-                        {/if}
+                        </Button>
                     </div>
 
-                    <div class="pt-6 border-t">
-                        <h3 class="font-bold text-lg flex items-center mb-4 text-brand-indigo">
-                            <Nfc class="mr-2 size-5" /> The Magic Touch
-                        </h3>
-                        
-                        {#if nfc.status === 'unsupported'}
-                            <!-- Static Button for Unsupported State -->
-                            <div class="w-full py-4">
-                                <Button 
-                                    variant="secondary" 
-                                    class="w-full h-14 text-lg rounded-full shadow-sm border border-border" 
-                                    onclick={() => showNFCModal = true}
-                                >
-                                    How to Write Tag
-                                </Button>
-                            </div>
-                        {:else}
-                            <!-- Mobile Sticky Container / Desktop Static -->
+                    <!-- NFC Write (if supported) -->
+                    {#if nfc.status !== 'unsupported'}
+                        <div class="pt-6 border-t">
+                            <h3 class="font-bold text-lg flex items-center mb-4 text-brand-indigo">
+                                <Nfc class="mr-2 size-5" /> The Magic Touch
+                            </h3>
                             <div class="w-full py-4">
                                 <Button 
                                     variant="magic" 
@@ -244,8 +233,8 @@
                                 </Button>
                                 
                                 {#if nfc.error}
-                                    <div class="absolute -top-16 left-0 right-0 md:static md:mt-2 pointer-events-none">
-                                        <p class="text-sm text-white bg-destructive/90 backdrop-blur px-4 py-2 rounded-full mx-auto w-fit font-medium text-center animate-in fade-in slide-in-from-bottom-2 md:text-destructive md:bg-transparent md:p-0 shadow-lg">
+                                    <div class="mt-2">
+                                        <p class="text-sm text-destructive text-center font-medium animate-in fade-in">
                                             {nfc.error}
                                         </p>
                                     </div>
@@ -253,34 +242,17 @@
                             </div>
                             <!-- Spacer for Mobile Sticky Button -->
                             <div class="h-24 md:hidden"></div>
-                        {/if}
-                    </div>
+                        </div>
+                    {/if}
                 </div>
             </div>
 
-            <Modal bind:open={showNFCModal} title="How to Write NFC Tag">
-                <div class="space-y-4 py-2">
-                    <p class="text-sm text-muted-foreground">
-                        Your browser doesn't support direct NFC writing. You can still write this character using the <strong>NFC Tools</strong> app:
-                    </p>
-                    <ol class="text-sm space-y-2 list-decimal list-inside">
-                        <li>Copy the payload below.</li>
-                        <li>Open the <strong>NFC Tools</strong> app on your phone.</li>
-                        <li>Select <strong>Write</strong> &gt; <strong>Add a record</strong>.</li>
-                        <li>Select <strong>Text</strong> and paste the payload.</li>
-                        <li>Tap <strong>Write</strong> and hold your phone near the tag.</li>
-                    </ol>
-                    <div class="mt-4">
-                        <p class="text-xs font-semibold mb-1">Payload:</p>
-                        <div class="flex items-center gap-2 p-2 bg-muted rounded border">
-                            <code class="flex-1 text-xs break-all">{char.nfc_payload}</code>
-                            <Button size="sm" variant="ghost" onclick={() => copyPayload(char.nfc_payload || '')}>
-                                Copy
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </Modal>
+            <!-- FableForge modal -->
+            <FableForgeModal
+                bind:open={showFableForgeModal}
+                characterId={char.id}
+                registryUrl={char.registry_url}
+            />
 
             {#if char.models_3d && char.models_3d.length > 0}
                 <div class="space-y-4">

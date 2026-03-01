@@ -5,6 +5,11 @@ export const Model3DSchema = z.object({
 	url: z.string().url()
 });
 
+export const AudioTrackSchema = z.object({
+	title: z.string(),
+	url: z.string().url()
+});
+
 export const CharacterSchema = z.object({
 	id: z.string(),
 	name: z.string().min(1, 'Name is required'),
@@ -13,6 +18,7 @@ export const CharacterSchema = z.object({
     description: z.string().optional(),
 	gallery_images: z.array(z.url()).optional().default([]),
 	audio_sample_url: z.url().optional(),
+	tracks: z.array(AudioTrackSchema).optional().default([]),
 	audio_zip_url: z.url().optional(),
 	models_3d: z.array(Model3DSchema).optional().default([]),
 	nfc_payload: z.string().optional(),
@@ -31,6 +37,7 @@ export const RegistrySchema = z.object({
 });
 
 export type Model3D = z.infer<typeof Model3DSchema>;
+export type AudioTrack = z.infer<typeof AudioTrackSchema>;
 export type Character = z.infer<typeof CharacterSchema>;
 export type RegistryMeta = z.infer<typeof RegistryMetaSchema>;
 export type Registry = z.infer<typeof RegistrySchema>;
