@@ -1,0 +1,6 @@
+[vcs]
+software = "Git"
+
+[modules.root]
+path = "."
+packageManager = "Npm"

@@ -10,7 +10,8 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"release": "panrelease release"
 	},
 	"devDependencies": {
 		"@internationalized/date": "^3.11.0",
@@ -20,6 +21,7 @@
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/vite": "^4.1.18",
 		"mode-watcher": "^1.1.0",
+		"panrelease": "^0.18.0",
 		"svelte": "^5.49.2",
 		"svelte-check": "^4.3.6",
 		"svelte-sonner": "^1.0.7",
